@@ -59,7 +59,7 @@ You should have a connection to the database server hosted on the Hutch gizmo cl
 
 To start accessing databases, schemas, tables, etc. select the server name then go to:
 Databases > select desired database > Schemas > select desired schema or default 'public' schema > select/right-click Tables
-![](exe_dbloc.jpg) 
+![](exe_dbloc.JPG) 
   
 
 # SETTING UP THE BINARY PATH
@@ -87,7 +87,7 @@ Next, select the  Columns tab and deselect all the columns except the ones in yo
 
 4. Click 'Ok.'
 
-![](csv_cols.jpg) 
+![](csv_cols.JPG) 
 
 # III. Technical Information for Dynamic Data Access Framework
 ### INTRO TO SQL SYNTAX
