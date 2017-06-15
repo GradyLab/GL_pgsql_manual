@@ -74,7 +74,7 @@ That is, on import the Excel csv columns will be made to conform to the pre-spec
 That said, here are the general steps to take to import a csv from Excel:  
 1. Either verify a postgreSQL table exists or make a new postgreSQL table that will be the destination table for the Excel data. This will involve specification of the column classes or data types, as well as a specific name for each column and an explicit column order. 
 
-![](csv_settings.jpg) 
+![](csv_settings.JPG) 
 
 2. Make sure the Excel file to import matches the format of the destination postgreSQL table.
 Namely, make sure:   
