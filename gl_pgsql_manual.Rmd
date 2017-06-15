@@ -59,7 +59,7 @@ You should have a connection to the database server hosted on the Hutch gizmo cl
 
 To start accessing databases, schemas, tables, etc. select the server name then go to:
 Databases > select desired database > Schemas > select desired schema or default 'public' schema > select/right-click Tables
-![](~\exe_dbloc.jpg) 
+![](exe_dbloc.jpg) 
 # SETTING UP THE BINARY PATH
 Many essential features in pgAdmin require access to modules initially installed with postgreSQL. 
 To ensure pgAdmin can access these, Click File>Preferences>Paths>Binary Paths
@@ -75,7 +75,7 @@ That said, here are the general steps to take to import a csv from Excel:
 1. Either verify a postgreSQL table exists or make a new postgreSQL table that will be the destination table for the Excel data.
 This will involve specification of the column classes or data types, as well as a specific name for each column and an explicit column order. 
 
-![](~\csv_settings.jpg) 
+![](csv_settings.jpg) 
 
 2. Make sure the Excel file to import matches the format of the destination postgreSQL table.
 Namely, make sure: 
@@ -90,7 +90,7 @@ The only columns left should correspond to your data columns, and these should b
 
 4. Click 'Ok.'
 
-![](~\csv_cols.jpg) 
+![](csv_cols.jpg) 
 
 # III. Technical Information for Dynamic Data Access Framework
 ### INTRO TO SQL SYNTAX
