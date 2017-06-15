@@ -6,14 +6,7 @@ output:
   pdf_document: default
   html_document: default
 ---
-```{r, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
-#library(DBI); library("RPostgreSQL")
-#pw <- "glpassword"; drv <- dbDriver("PostgreSQL")
-#con <- dbConnect(drv,dbname="glcolon",host="mydb",port=32081,user="smaden")
-#con <- dbConnect(drv,dbname="glsamples_test",host="localhost",port=5432,user="smaden",passwor#d=pw)
 
-#db <- dbConnect(RSQLite::SQLite(), dbname = "glpolyps")
-```
 # Purpose
 
 This document details the basics and essentials of managing, adding, and extracting data in the Grady Lab postgreSQL server.
