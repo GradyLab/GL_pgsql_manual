@@ -44,49 +44,46 @@ To connect to a database, first make sure a database container has been created 
 
 Next, install postgreSQL and pgAdmin to your local harddrive. 
 
-Set up a connection as a pgSQL client in pgAdmin by:
-1. Right click 'servers' in lefthand menu, then Create>Servers
-2. In popup window, select Connection tab
-3. In connection tab, populate the entries with:
-A. Host name (eg. "mydb")
-B. Port (eg. 12345)
-C. Maintenance Database (eg. "name-of-database")
-D. Username 
-E. Password
-4. Save.
-
-You should have a connection to the database server hosted on the Hutch gizmo clusters. 
+Set up a connection as a pgSQL client in pgAdmin by:  
+1. Right click 'servers' in lefthand menu, then Create>Servers  
+2. In popup window, select Connection tab  
+3. In connection tab, populate the entries with:  
+A. Host name (eg. "mydb")  
+B. Port (eg. 12345)  
+C. Maintenance Database (eg. "name-of-database")  
+D. Username   
+E. Password  
+4. Save.  
+  
+You should have a connection to the database server hosted on the Hutch gizmo clusters.   
 
 To start accessing databases, schemas, tables, etc. select the server name then go to:
 Databases > select desired database > Schemas > select desired schema or default 'public' schema > select/right-click Tables
 ![](exe_dbloc.jpg) 
+  
+
 # SETTING UP THE BINARY PATH
-Many essential features in pgAdmin require access to modules initially installed with postgreSQL. 
-To ensure pgAdmin can access these, Click File>Preferences>Paths>Binary Paths
+Many essential features in pgAdmin require access to modules initially installed with postgreSQL. To ensure pgAdmin can access these, Click File>Preferences>Paths>Binary Paths
 Enter the local path to the directory with the modules, eg. by default: `r paste0("C:\\\\Program Files\\\\PostgreSQL\\\\9.6\\\\bin")`
 
 # IMPORTING AND EXPORTING EXCEL .csv FILES
 
-Via pgAdmin, postgreSQL handles Excel quite well by default. Certain variables are reformatted automatically, such as dates, when they are imported.
-However, it should be possible to import a table with minimal modification to the cell attributes in Excel. 
-That is, on import the Excel csv columns will be made to conform to the pre-specified column attributes in the destination postgreSQL table.
+Via pgAdmin, postgreSQL handles Excel quite well by default. Certain variables are reformatted automatically, such as dates, when they are imported. However, it should be possible to import a table with minimal modification to the cell attributes in Excel. 
+That is, on import the Excel csv columns will be made to conform to the pre-specified column attributes in the destination postgreSQL table.  
 
-That said, here are the general steps to take to import a csv from Excel:
-1. Either verify a postgreSQL table exists or make a new postgreSQL table that will be the destination table for the Excel data.
-This will involve specification of the column classes or data types, as well as a specific name for each column and an explicit column order. 
+That said, here are the general steps to take to import a csv from Excel:  
+1. Either verify a postgreSQL table exists or make a new postgreSQL table that will be the destination table for the Excel data. This will involve specification of the column classes or data types, as well as a specific name for each column and an explicit column order. 
 
 ![](csv_settings.jpg) 
 
 2. Make sure the Excel file to import matches the format of the destination postgreSQL table.
-Namely, make sure: 
+Namely, make sure:   
 A. The excel file only contains columns corresponding to those in the destination table, 
-B. All columns are in the same order as the destination table
-C. Data formatting doesn't violate any of the column class restraints in the destination table (eg. if a column is "integer" then no entries like "123a")
+B. All columns are in the same order as the destination table  
+C. Data formatting doesn't violate any of the column class restraints in the destination table (eg. if a column is "integer" then no entries like "123a")  
 
-3. Once the csv is properly formatted, navigate to the table in pgAdmin, right click and select "Import/Export"
-On the window, select the parameters to match the Figure (Fig#).
-Next, select the  Columns tab and deselect all the columns except the ones in your excel file and destination table.
-The only columns left should correspond to your data columns, and these should be listed in the same order as in the csv and table. 
+3. Once the csv is properly formatted, navigate to the table in pgAdmin, right click and select "Import/Export". On the window, select the parameters to match the Figure (Fig#).
+Next, select the  Columns tab and deselect all the columns except the ones in your excel file and destination table. The only columns left should correspond to your data columns, and these should be listed in the same order as in the csv and table. 
 
 4. Click 'Ok.'
 
@@ -95,7 +92,7 @@ The only columns left should correspond to your data columns, and these should b
 # III. Technical Information for Dynamic Data Access Framework
 ### INTRO TO SQL SYNTAX
 
-no inherent order to rows (aka tuples or records) for data storage => need to specify in SQL search if order is important
+There are no inherent order to rows (aka. 'tuples' or 'records') for data storage, and thus one needs to specify in SQL search if order is important for query. 
 
 ### VIEWS
 In addition to tables, there are several ephemera not related to static stored data which are unique to object-relational management systems. 
@@ -114,9 +111,15 @@ For instace, one script might address the following query:
 
 "List all patients with at least two recorded colonoscopies, where polyps were found on only the index, and whose age is at least 70 years old."
 
-This should be translated to a View that filters on: 1. number of patient colonoscopies >=2; 2. number of polyps at index >0; 3. number of polyps at second (later) colonoscopy = 0; and 4. age =70.
+This should be translated to a View that filters on: 
+1. number of patient colonoscopies >=2;   
+2. number of polyps at index >0;   
+3. number of polyps at second (later) colonoscopy = 0;   
+and 4. age = 70.  
 
-The specific qualifiers ">=2", ">0", "0", and "70" should thus be treated as variables when writing the view definition, such that subsequent queries for 80 year old or 60 year olds with at least 3 colonoscopies or at least 1 polyp on followup could make use of the same View definition with minimal alterations.
+The specific qualifiers ">=2", ">0", "0", and "70" should thus be treated as variables when writing the view definition, such that subsequent queries for 80 year old or 60 year olds with at least 3 colonoscopies or at least 1 polyp on followup could make use of the same View definition with minimal alterations.  
+
+At a later date, these qualifiers could be treated as variables in a wrapper function for a user interface (eg. a shiny application).
 
 # Appendix
 
@@ -152,9 +155,16 @@ The specific qualifiers ">=2", ">0", "0", and "70" should thus be treated as var
 
 DEFINITION:
 ```{r}
-#SELECT polyps1.record_date,
+# SELECT polyps1.record_date,
 #    count(polyps1.record_date) AS count,
 #    polyps1.patientid
 #   FROM clinical_data.polyps1
-#  GROUP BY polyps1.record_date, polyps1.patientid;
+# GROUP BY polyps1.record_date, polyps1.patientid;
 ```
+
+# TODO
+1. Add connections to pgsql example db and show results of View queries. 
+2. Add table export (to Excel .csv format) directions.
+3. Flesh out the static repository structure plan, frame so updates are possible.
+4. Flesh out Views script/query Appendix examples with known queries.
+
