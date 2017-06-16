@@ -66,7 +66,7 @@ Child tables can inherit columns from other children, which establishes a link b
 
 One potentially effective use of inheritance is where the parent table is a simple index of all types of all patient records. That is, a single patient may have multiple records, for example these might include colonoscopy records, individual polyp records, or cohort-collected data (eg. from separate questionnaires or followup encounters independent of any colonoscopy). See figure for a scheme of such a setup.  
 
-![Hypothetical inheritance structure using aforementioned colonoscopies and polyps tables as children to an aggregate index or data inventory table. Note missingness is allowed based on which table an entry comes from. In practice, project id could be included in the polyps table to avoid missingness for polyp entries in the inventory.](inheritance.JPG)
+![Hypothetical inheritance structure using aforementioned colonoscopies and polyps tables as children to an aggregate index or data inventory table. Note missingness is allowed based on which table an entry comes from. In practice, project id could be included in the polyps table to avoid missingness for polyp entries in the inventory.](inheritance.jpg)
 
 # II. Practical Information
 ## Setting Up The Connection (For Hutch databases)
@@ -97,7 +97,7 @@ You should have a connection to the database server hosted on the Hutch gizmo cl
 To start accessing databases, schemas, tables, etc. select the server name then go to:
 Databases > select desired database > Schemas > select desired schema or default 'public' schema > select/right-click Tables  
 
-![Example pgAdmin view, navigating to and viewing entries in the colonoscopies table. Note the SQL code above the table is the query performed.](pgadmin_scn.jpg) 
+![Example pgAdmin view, navigating to and viewing entries in the colonoscopies table. Note the SQL code above the table is the query performed.](pgadmin_scn.JPG) 
 
 #### User Creation and Restricted Access
 
@@ -118,7 +118,7 @@ That is, on import the Excel csv columns will be made to conform to the pre-spec
 That said, here are the general steps to take to import a csv from Excel:  
 1. Either verify a postgreSQL table exists or make a new postgreSQL table that will be the destination table for the Excel data. This will involve specification of the column classes or data types, as well as a specific name for each column and an explicit column order.    
 
-![Setting config for importing Excel .csv files. Note that import must be selected, format must be '.csv', header should be selected, and delimiter must be changed to ','. Finally, select only the columns in the table using the Columns tab.](csv_importoptions.jpg) 
+![Setting config for importing Excel .csv files. Note that import must be selected, format must be '.csv', header should be selected, and delimiter must be changed to ','. Finally, select only the columns in the table using the Columns tab.](csv_importoptions.JPG) 
 
 2. Make sure the Excel file to import matches the format of the destination postgreSQL table.
 Namely, make sure:   
@@ -131,7 +131,7 @@ Next, select the  Columns tab and deselect all the columns except the ones in yo
 
 4. Click 'Ok.'
 
-![Designating columns for the imported .csv file. Tableoid, cmax, xmax, cmin, xmin, ctid, are examples of system-generated columns that need to be removed before import.](csv_colselect.jpg) 
+![Designating columns for the imported .csv file. Tableoid, cmax, xmax, cmin, xmin, ctid, are examples of system-generated columns that need to be removed before import.](csv_colselect.JPG) 
 
 # III. Technical Information for Dynamic Data Access Framework
 ## Intro. to SQL
