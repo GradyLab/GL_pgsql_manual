@@ -68,6 +68,11 @@ One potentially effective use of inheritance is where the parent table is a simp
 
 ![Hypothetical inheritance structure using aforementioned colonoscopies and polyps tables as children to an aggregate index or data inventory table. Note missingness is allowed based on which table an entry comes from. In practice, project id could be included in the polyps table to avoid missingness for polyp entries in the inventory.](inheritance.JPG)
 
+#### Database Schema
+The schema refers to the design of tables and other schema objects, including their relations to one another. The schema for the grady lab database will be backed up on the grady lab github page. Refer to the schema image for an example schema for the patients, colonoscopies, and polyps tables in the grady lab database.
+
+![Example image showing schema of part of the Grady Lab PostgreSQL database. Note the key relations between patient_id variables in the tables.](patient_coln_polyps_tablerelations.jpg) 
+
 # II. Practical Information
 ## Setting Up The Connection (For Hutch databases)
 The Hutch now hosts lab servers (or "database containers") on the local gizmo clusters. These are then backed up periodically.  
@@ -133,6 +138,25 @@ Next, select the  Columns tab and deselect all the columns except the ones in yo
 
 ![Designating columns for the imported .csv file. Tableoid, cmax, xmax, cmin, xmin, ctid, are examples of system-generated columns that need to be removed before import.](csv_colselect.jpg) 
 
+### Views
+Views are one primary way that such queries are possible in the postgreSQL system. They are objects in the schema assembled by "definitions", which is essentially a SQL query or script. The advantage of Views is they are dynamic. That is, when their referent data is updated, they too can be rerun and updated to reflect those changes. It is extremely convenient that the defining script is stored with the pseudo-table, and therefore can be rerun as desired, even by a user not versed in SQL. 
+
+The above leads to a need for iterative use and reuse of View definition scripts. That is, to ensure efficient data storage and maximize utility, scripts should be frames as generally as possible, such that the filtering criteria can be modified without changing the underlying code for the query.
+
+For instace, one script might address the following query: 
+
+__"List all patients with at least two recorded colonoscopies, where polyps were found on only the index, and whose age is at least 70 years old."__
+
+This should be translated to a View that filters on:   
+1. number of patient colonoscopies >=2;   
+2. number of polyps at index >0;   
+3. number of polyps at second (later) colonoscopy = 0;   
+and 4. age >= 70.  
+
+The specific qualifiers ">=2", ">0", "0", and ">=70" should thus be treated as variables when writing the view definition, such that subsequent queries for 80 year old or 60 year olds with at least 3 colonoscopies or at least 1 polyp on followup could make use of the same or similar View definition, with minimal alterations.  
+
+At a later date, these qualifiers could be treated as variables in a wrapper function for a user interface (eg. a shiny application).
+
 # III. Technical Information for Dynamic Data Access Framework
 ## Intro. to SQL
 
@@ -146,24 +170,12 @@ In addition to tables, there are several ephemera not related to static stored d
 When dealing with rich datasets encompassing medical records, cohort clinical data, lab sample records, and downstream analytical platform records, framing a simple question can become complicated when translated into a scripted query.
 This necessitates a well designed static data storage layout that is conducive to these kinds of queries. 
 
-### VIEWS
-Views are one primary way that such queries are possible in the postgreSQL system. They are objects in the schema assembled by "definitions", which is essentially a SQL query or script. The advantage of Views is they are dynamic. That is, when their referent data is updated, they too can be rerun and updated to reflect those changes. It is extremely convenient that the defining script is stored with the pseudo-table, and therefore can be rerun as desired, even by a user not versed in SQL. 
+## View Design
+Once a view has been effectively designed and saved, its definition can then be copied and used iteratively with differing variable values. 
 
-The above leads to a need for iterative use and reuse of View definition scripts. That is, to ensure efficient data storage and maximize utility, scripts should be frames as generally as possible, such that the filtering criteria can be modified without changing the underlying code for the query.
+When designing a view, it is helpful to break down the intended query into subunits that can be tackled with their own code chunks. For instance, to design a filter on age at colonoscopy, it is vital to first derive the ages by taking the interval between the 'dob' date of birth provided in the patients table and the 'encounter_date' encounter date provided in the colonoscopies table.
 
-For instace, one script might address the following query: 
-
-####"List all patients with at least two recorded colonoscopies, where polyps were found on only the index, and whose age is at least 70 years old."
-
-This should be translated to a View that filters on:   
-1. number of patient colonoscopies >=2;   
-2. number of polyps at index >0;   
-3. number of polyps at second (later) colonoscopy = 0;   
-and 4. age >= 70.  
-
-The specific qualifiers ">=2", ">0", "0", and ">=70" should thus be treated as variables when writing the view definition, such that subsequent queries for 80 year old or 60 year olds with at least 3 colonoscopies or at least 1 polyp on followup could make use of the same or similar View definition, with minimal alterations.  
-
-At a later date, these qualifiers could be treated as variables in a wrapper function for a user interface (eg. a shiny application).
+A second design strategy builds complex temporary tables through nesting. While not necessarily aesthetically appealing, it ensures a modular build where nested sub tables can be extracted, placed into a view, and be used to successfully build a pseudo table with more limited filtering criteria. An example is provided with 3b1 and 2b2 in the appendix. 3b1 is a table showing encounters for patients whose index encounters have a minimum number of total polyps reported by the attending physician. 3b2 builds on this extensively by adding the additional filtering criteria of minimum patient age at encounter, minimum polyps reported at encounter, and minimum total encounters available after filtering, while also adopting the index encounter polyp count filter from 3b1. 
 
 # Appendix
 
@@ -197,13 +209,80 @@ At a later date, these qualifiers could be treated as variables in a wrapper fun
 ## 3. Example View Definitions
 ### 3a. QUERY: On a by-encounter,by-patient basis, how many polyps have details recorded in the polyps table? 
 
-DEFINITION:
-```{r}
-# SELECT polyps1.record_date,
-#    count(polyps1.record_date) AS count,
-#    polyps1.patientid
-#   FROM clinical_data.polyps1
-# GROUP BY polyps1.record_date, polyps1.patientid;
+Definition:
+```{r eval=FALSE}
+SELECT polyps1.encounter_date,
+    count(polyps1.encounter_date) AS count,
+    polyps.patient_id
+   FROM gldata.polyps
+GROUP BY polyps.encounter_date, polyps.patient_id;
+```
+
+### 3b1. What endoscopies are from patients whose index endoscopy had a minimum number of polyps? This query is nested in 3b2
+
+Definition:
+```{r eval=FALSE}
+SELECT *
+FROM gldata.colonoscopies AS coln
+WHERE coln.patient_id 
+IN (	SELECT colonoscopies.patient_id 		
+			FROM gldata.colonoscopies 
+			WHERE index='T'
+    		AND colonoscopies.total_polyps_reported >= 1) /* FILTER ON TOTAL POLYPS AT INDEX */
+ORDER BY coln.patient_id,coln.encounter_date;
+```
+
+### 3b. QUERY: What patients have encounters with a minimum age, recorded polyp count, total polyp count, and minimum index encounter polyp count? Show results as array aggregations by patient (every row is a patient, entries can contain info from multiple encounters). 
+
+Definition:
+```{r eval=FALSE}
+SELECT patients.patient_id,
+    temppat.num_encounters,
+    temppat.encounter_dates,
+    temppat.encounter_ages,
+    temppat.polyps_recorded_by_encounter,
+    temppat.total_polyps_reported,
+    temppat.index_id
+   FROM gldata.patients,
+    ( SELECT colnage.patient_id,            
+     	colnage.patient_dob,    
+     	array_agg(colnage.age_yrs) AS encounter_ages,            
+     	array_agg(colnage.encounter_date) AS encounter_dates,            
+     	array_agg(colnage.n_polyps_recorded) AS polyps_recorded_by_encounter,            
+     	count(colnage.encounter_date) AS num_encounters,
+        array_agg(colnage.total_polyps_reported) AS total_polyps_reported,
+     	array_agg(colnage.index) AS index_id
+           FROM ( SELECT glcol.patient_id,
+                    patients_1.dob AS patient_dob,
+                    age(glcol.encounter_date::timestamp with time zone, patients_1.dob::timestamp with time zone) AS age,
+                    date_part('year'::text, age(glcol.encounter_date::timestamp with time zone, patients_1.dob::timestamp with time zone)) AS age_yrs,
+                    glcol.encounter_date,
+                    glcol.total_polyps_reported,
+                 glcol.index,
+                    n_polyps.n_polyps AS n_polyps_recorded
+                   FROM gldata.patients patients_1,
+                    gldata.colonoscopies glcol,
+                    ( SELECT colonoscopies.patient_id,
+                            colonoscopies.encounter_date,
+                            count((polyps.encounter_date || '-'::text) || polyps.patient_id::text) AS n_polyps
+                        FROM gldata.colonoscopies
+		     		LEFT JOIN gldata.polyps 
+		     		ON colonoscopies.patient_id::text = polyps.patient_id::text 
+		     		AND colonoscopies.encounter_date = polyps.encounter_date
+                        GROUP BY colonoscopies.patient_id, colonoscopies.encounter_date
+                        ORDER BY colonoscopies.patient_id, colonoscopies.encounter_date) n_polyps
+		 	WHERE patients_1.patient_id::text = glcol.patient_id::text 
+                 		AND patients_1.patient_id::text = n_polyps.patient_id::text 
+                		AND glcol.encounter_date = n_polyps.encounter_date
+                	AND glcol.patient_id IN ( SELECT colonoscopies.patient_id 		
+							FROM gldata.colonoscopies 
+							WHERE index='T'
+   		 					AND colonoscopies.total_polyps_reported >= 2) /* FILTER ON TOTAL NUMBER OF POLYPS AT INDEX */
+		) AS colnage
+     WHERE colnage.age_yrs >= 0::double precision /* FILTER ON MINIMUM AGE AT ENCOUNTER */ 		
+     AND colnage.n_polyps_recorded >= 0 /* FILTER ON MINIMUM NUMBER OF POLYPS AT ENCOUNTER */     
+     GROUP BY colnage.patient_id, colnage.patient_dob) temppat 
+     WHERE patients.patient_id::text = temppat.patient_id::text AND temppat.num_encounters >= 0; /* FILTER ON MINIMUM NUMBER OF ENCOUNTERS*/
 ```
 
 # TODO
