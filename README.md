@@ -70,7 +70,7 @@ Database schema can be viewed as a series of table creation scripts written in S
 
 # II. Practical Information
 ## Setting Up The Connection (For Hutch databases)
-The Hutch now hosts lab servers (or "database containers") on the local gizmo clusters. These are then backed up periodically.  
+The Hutch now hosts lab servers (or "database containers") on the local gizmo clusters. These are then backed up periodically. MyDB provides [restore instructions](https://mydb.fredhutch.org/doc_backup/), and further updates to these details are expected soon.  
 
 ### PostgreSQL Clients
 #### Database Creation and Superuser Access
