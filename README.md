@@ -53,20 +53,20 @@ In addition to these designations, which constrain the type of data that can be 
 #### Key Relations
 Key relations are an example of additional constraints that inform table design. In a table with a column designated as a Primary Key, the column is constrained to have unique and non-null entries. That is, records in that table cannot be repeated and cannot have a null primary key value. This is convenient for several reasons - first, it adds a constraint that keeps entries tidy and logical, and second, it allows for a many-to-one relation with other tables via a Foreign Key designation, which is convenient for structuring data queries. 
 
-To demonstrate, the Grady Lab database includes two patient records tables: a colonoscopies table, and a separate polyp records table. In the colonoscopies table, the encounter date (or date of colonoscopy procedure) is a designated Primary Key. This is because, for that table, only one row per colonoscopy is allowed. In the polyp records table however, there can be multiple records for multiple polyps described in a single colonoscopy. Since each polyp has an assciated colonoscopy, we designate the encounter date to be a Foreign Key, which introduces a relation to the encounter date in the colonoscopies table, or the Primary Key (see figure).
+To demonstrate, the Grady Lab database includes two patient records tables: a patients table that indexes patients and their date of birth; and a colonoscopies table that tracks available data from patient colonoscopies. The following figure depicts the schema design of these two tables with the fields, data types, constraints, and example records. For the patients table, the patientid column is not null, unique, and a primary key. For the colonoscopies table, the patientid column is also not null, but it is also a foreign key to the corresponding patientid column in the patients table. This adds an additional constraint to the colonoscopies patientid field, where no patientid can be included in that table if it does not also occur in the patients table. This means we can have records of patients in the patients table without corresponding colonoscopies (so long as there are no preexisting records with the same patientid in the patients table), but we cannot have colonoscopies recorded in the colonoscopies table without a patientid corresponding to a record in the patients table. 
 
-![The key relation between two hypothetical tables, one for colonoscopies and another for recorded polyps. The colonoscopy/ecounter date has the constraint of 'Primary Key' in the colonoscopies table (all dates unique, and must be non-null for every row), while in the polyps table it has the 'Foreign Key' (many entries possible for one colonoscopy).](keyrelation_clip.JPG)
+![Key relation, one-to-many on patientid across the Patients and Colonoscopies tables.](keyrelation.JPG)
 
-#### Inheritance
-Inheritance establishes a dynamic relation between tables, and when used effectively can add a degree of automation that is highly convenient for rich datasets. This is also one of several types of dependancy relations that can exist in a pgsql database.
+#### Database Schema
+The schema refers to the design of tables and other schema objects, including their relations to one another. This is the fundamental structure and relations of the static data and database tables. The generation of database schema is called normalization.
 
-Inheritance between two discrete tables implies a parent-to-child relationship, where the child inherits all or some of the columns from the parent table. The parent table is populated with any records added in the child table. Modifications such as deletions of records in either the parent or child will then cascade into the other table linked by the dependancy. 
+![Database schema image created in pgModeler. Note the primary-to-foreign key relations between patientid fields in the Patients table and the Colonoscopies and Polyps tables, respectively.](patient_coln_polyps_tablerelations.JPG) 
 
-Child tables can inherit columns from other children, which establishes a link back to the parent for the second child (eg. record additions to the second child will manifest in the parent). Additionally, multiple children can inherit from the same parent table. It is important to note, however, that the parent will include all records from all children, so if there are redundancies among the child tables, then they can all manifest in the parent, which can quickly make the parent table difficult to manage. 
+The schema for the grady lab database will be backed up on the grady lab [github page](https://github.com/GradyLab/GradyLab_PostgreSQL). 
 
-One potentially effective use of inheritance is where the parent table is a simple index of all types of all patient records. That is, a single patient may have multiple records, for example these might include colonoscopy records, individual polyp records, or cohort-collected data (eg. from separate questionnaires or followup encounters independent of any colonoscopy). See figure for a scheme of such a setup.  
+Database schema can be viewed as a series of table creation scripts written in SQL. To automatically get table creation scripts from pgAdmin, right click the table in the left-hand menu and select: "Scripts" > "CREATE Script" then save, or instead select "Backup" and choose from the dump options tab whether to export the schema, the data, or both.
 
-![Hypothetical inheritance structure using aforementioned colonoscopies and polyps tables as children to an aggregate index or data inventory table. Note missingness is allowed based on which table an entry comes from. In practice, project id could be included in the polyps table to avoid missingness for polyp entries in the inventory.](inheritance.jpg)
+![Options for backing up a table schema and/or data in pgAdmin, accessible from right-clicking the Table and selecting Backup.](backup_options.JPG)
 
 # II. Practical Information
 ## Setting Up The Connection (For Hutch databases)
@@ -108,7 +108,7 @@ The following describes how to approach data management in the pgAdmin GUI.
 
 ### Setting up the Binary Path
 Many essential features in pgAdmin require access to modules initially installed with postgreSQL. To ensure pgAdmin can access these, Click File>Preferences>Paths>Binary Paths
-Enter the local path to the directory with the modules, eg. by default: `r paste0("C:\\\\Program Files\\\\PostgreSQL\\\\9.6\\\\bin")`
+Enter the local path to the directory with the modules, eg. by default: " C:>Program Files>PostgreSQL>9.6>bin" Where '>' is replaced by forward or backward slashes.
 
 ### Importing and Exporting Excel .csv Files
 
@@ -133,6 +133,25 @@ Next, select the  Columns tab and deselect all the columns except the ones in yo
 
 ![Designating columns for the imported .csv file. Tableoid, cmax, xmax, cmin, xmin, ctid, are examples of system-generated columns that need to be removed before import.](csv_colselect.JPG) 
 
+### Views
+Views are one primary way that such queries are possible in the postgreSQL system. They are objects in the schema assembled by "definitions", which is essentially a SQL query or script. The advantage of Views is they are dynamic. That is, when their referent data is updated, they too can be rerun and updated to reflect those changes. It is extremely convenient that the defining script is stored with the pseudo-table, and therefore can be rerun as desired, even by a user not versed in SQL. 
+
+The above leads to a need for iterative use and reuse of View definition scripts. That is, to ensure efficient data storage and maximize utility, scripts should be frames as generally as possible, such that the filtering criteria can be modified without changing the underlying code for the query.
+
+For instace, one script might address the following query: 
+
+__"List all patients with at least two recorded colonoscopies, where polyps were found on only the index, and whose age is at least 70 years old."__
+
+This should be translated to a View that filters on:   
+1. number of patient colonoscopies >=2;   
+2. number of polyps at index >0;   
+3. number of polyps at second (later) colonoscopy = 0;   
+and 4. age >= 70.  
+
+The specific qualifiers ">=2", ">0", "0", and ">=70" should thus be treated as variables when writing the view definition, such that subsequent queries for 80 year old or 60 year olds with at least 3 colonoscopies or at least 1 polyp on followup could make use of the same or similar View definition, with minimal alterations.  
+
+At a later date, these qualifiers could be treated as variables in a wrapper function for a user interface (eg. a shiny application).
+
 # III. Technical Information for Dynamic Data Access Framework
 ## Intro. to SQL
 
@@ -146,24 +165,12 @@ In addition to tables, there are several ephemera not related to static stored d
 When dealing with rich datasets encompassing medical records, cohort clinical data, lab sample records, and downstream analytical platform records, framing a simple question can become complicated when translated into a scripted query.
 This necessitates a well designed static data storage layout that is conducive to these kinds of queries. 
 
-### VIEWS
-Views are one primary way that such queries are possible in the postgreSQL system. They are objects in the schema assembled by "definitions", which is essentially a SQL query or script. The advantage of Views is they are dynamic. That is, when their referent data is updated, they too can be rerun and updated to reflect those changes. It is extremely convenient that the defining script is stored with the pseudo-table, and therefore can be rerun as desired, even by a user not versed in SQL. 
+## View Design
+Once a view has been effectively designed and saved, its definition can then be copied and used iteratively with differing variable values. 
 
-The above leads to a need for iterative use and reuse of View definition scripts. That is, to ensure efficient data storage and maximize utility, scripts should be frames as generally as possible, such that the filtering criteria can be modified without changing the underlying code for the query.
+When designing a view, it is helpful to break down the intended query into subunits that can be tackled with their own code chunks. For instance, to design a filter on age at colonoscopy, it is vital to first derive the ages by taking the interval between the 'dob' date of birth provided in the patients table and the 'encounter_date' encounter date provided in the colonoscopies table.
 
-For instace, one script might address the following query: 
-
-####"List all patients with at least two recorded colonoscopies, where polyps were found on only the index, and whose age is at least 70 years old."
-
-This should be translated to a View that filters on:   
-1. number of patient colonoscopies >=2;   
-2. number of polyps at index >0;   
-3. number of polyps at second (later) colonoscopy = 0;   
-and 4. age >= 70.  
-
-The specific qualifiers ">=2", ">0", "0", and ">=70" should thus be treated as variables when writing the view definition, such that subsequent queries for 80 year old or 60 year olds with at least 3 colonoscopies or at least 1 polyp on followup could make use of the same or similar View definition, with minimal alterations.  
-
-At a later date, these qualifiers could be treated as variables in a wrapper function for a user interface (eg. a shiny application).
+A second design strategy builds complex temporary tables through nesting. While not necessarily aesthetically appealing, it ensures a modular build where nested sub tables can be extracted, placed into a view, and be used to successfully build a pseudo table with more limited filtering criteria. An example is provided with 3b1 and 2b2 in the appendix. 3b1 is a table showing encounters for patients whose index encounters have a minimum number of total polyps reported by the attending physician. 3b2 builds on this extensively by adding the additional filtering criteria of minimum patient age at encounter, minimum polyps reported at encounter, and minimum total encounters available after filtering, while also adopting the index encounter polyp count filter from 3b1. 
 
 # Appendix
 
@@ -197,13 +204,74 @@ At a later date, these qualifiers could be treated as variables in a wrapper fun
 ## 3. Example View Definitions
 ### 3a. QUERY: On a by-encounter,by-patient basis, how many polyps have details recorded in the polyps table? 
 
-DEFINITION:
-```{r}
-# SELECT polyps1.record_date,
-#    count(polyps1.record_date) AS count,
-#    polyps1.patientid
-#   FROM clinical_data.polyps1
-# GROUP BY polyps1.record_date, polyps1.patientid;
+Definition:
+```{r eval=FALSE}
+SELECT polyps1.encounter_date,
+    count(polyps1.encounter_date) AS count,
+    polyps.patient_id
+   FROM gldata.polyps
+GROUP BY polyps.encounter_date, polyps.patient_id;
+```
+
+### 3b1. What endoscopies are from patients whose index endoscopy had a minimum number of polyps? This query is nested in 3b2
+
+Definition:
+```{r eval=FALSE}
+SELECT *
+FROM gldata.colonoscopies AS coln
+WHERE coln.patient_id 
+IN (	SELECT colonoscopies.patient_id 		
+			FROM gldata.colonoscopies 
+			WHERE index='T'
+    		AND colonoscopies.total_polyps_reported >= 1) /* FILTER ON TOTAL POLYPS AT INDEX */
+ORDER BY coln.patient_id,coln.encounter_date;
+```
+
+### 3b. QUERY: What patients have encounters with a minimum age, recorded polyp count, total polyp count, and minimum index encounter polyp count? Show results as array aggregations by patient (every row is a patient, entries can contain info from multiple encounters). 
+
+Definition:
+```{r eval=FALSE}
+SELECT pat.patient_id,
+t.ne AS num_encounters,
+t.ed AS encounter_dates,
+t.ea AS encounter_ages,
+t.pr AS polyps_recorded_by_encounter,
+t.tp AS total_polyps_reported,
+t.i index_id
+FROM gldata.patients pat,
+( SELECT ct.patient_id,
+  array_agg(ct.age_yrs) AS ea,
+  array_agg(ct.encounter_date) AS ed,
+  array_agg(ct.npolyps) AS pr,
+  count(ct.encounter_date) AS ne,
+  array_agg(ct.total_polyps_reported) AS tp,
+  array_agg(ct.index) AS i
+  FROM ( SELECT gc.patient_id,
+         date_part('year', age(gc.encounter_date, p.dob)) AS age_yrs,
+         gc.encounter_date,
+         gc.total_polyps_reported,
+         gc.index,
+         p.dob,
+         npolt.n_polyps AS npolyps
+         FROM gldata.patients AS p,
+         gldata.colonoscopies AS gc,
+         ( SELECT glc.patient_id,
+           glc.encounter_date,
+           count((polyps.encounter_date || '-') || polyps.patient_id) AS n_polyps
+           FROM gldata.colonoscopies glc
+           LEFT JOIN gldata.polyps ON glc.patient_id = polyps.patient_id AND glc.encounter_date = polyps.encounter_date
+           GROUP BY glc.patient_id, glc.encounter_date
+           ORDER BY glc.patient_id, glc.encounter_date) npolt
+         WHERE p.patient_id = gc.patient_id
+         AND p.patient_id = npolt.patient_id 
+         AND gc.encounter_date = npolt.encounter_date 
+         AND (gc.patient_id IN ( SELECT glc.patient_id
+                                       FROM gldata.colonoscopies glc
+                                       WHERE glc.index = true AND glc.total_polyps_reported >= 0))) ct
+  WHERE ct.age_yrs >= 0 AND ct.npolyps >= 0
+  GROUP BY ct.patient_id, ct.dob) t
+WHERE pat.patient_id = t.patient_id
+AND t.ne >= 1;
 ```
 
 # TODO
