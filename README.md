@@ -60,7 +60,7 @@ To demonstrate, the Grady Lab database includes two patient records tables: a pa
 #### Database Schema
 The schema refers to the design of tables and other schema objects, including their relations to one another. This is the fundamental structure and relations of the static data and database tables. The generation of database schema is called normalization.
 
-![Database schema image created in pgModeler. Note the primary-to-foreign key relations between patientid fields in the Patients table and the Colonoscopies and Polyps tables, respectively.](patient_coln_polyps_tablerelations.jpg) 
+![Database schema image created in pgModeler. Note the primary-to-foreign key relations between patientid fields in the Patients table and the Colonoscopies and Polyps tables, respectively.](patient_coln_polyps_tablerelations.JPG) 
 
 The schema for the grady lab database will be backed up on the grady lab [github page](https://github.com/GradyLab/GradyLab_PostgreSQL). 
 
