@@ -97,7 +97,7 @@ You should have a connection to the database server hosted on the Hutch gizmo cl
 To start accessing databases, schemas, tables, etc. select the server name then go to:
 Databases > select desired database > Schemas > select desired schema or default 'public' schema > select/right-click Tables  
 
-![Example pgAdmin view, navigating to and viewing entries in the colonoscopies table. Note the SQL code above the table is the query performed.](pgadmin_scn.jpg) 
+![Example pgAdmin view, navigating to and viewing entries in the colonoscopies table. Note the SQL code above the table is the query performed.](pgadmin_scn.JPG) 
 
 #### User Creation and Restricted Access
 
@@ -118,7 +118,7 @@ That is, on import the Excel csv columns will be made to conform to the pre-spec
 That said, here are the general steps to take to import a csv from Excel:  
 1. Either verify a postgreSQL table exists or make a new postgreSQL table that will be the destination table for the Excel data. This will involve specification of the column classes or data types, as well as a specific name for each column and an explicit column order.    
 
-![Setting config for importing Excel .csv files. Note that import must be selected, format must be '.csv', header should be selected, and delimiter must be changed to ','. Finally, select only the columns in the table using the Columns tab.](csv_importoptions.jpg) 
+![Setting config for importing Excel .csv files. Note that import must be selected, format must be '.csv', header should be selected, and delimiter must be changed to ','. Finally, select only the columns in the table using the Columns tab.](csv_importoptions.JPG) 
 
 2. Make sure the Excel file to import matches the format of the destination postgreSQL table.
 Namely, make sure:   
@@ -131,7 +131,7 @@ Next, select the  Columns tab and deselect all the columns except the ones in yo
 
 4. Click 'Ok.'
 
-![Designating columns for the imported .csv file. Tableoid, cmax, xmax, cmin, xmin, ctid, are examples of system-generated columns that need to be removed before import.](csv_colselect.jpg) 
+![Designating columns for the imported .csv file. Tableoid, cmax, xmax, cmin, xmin, ctid, are examples of system-generated columns that need to be removed before import.](csv_colselect.JPG) 
 
 ### Views
 Views are one primary way that such queries are possible in the postgreSQL system. They are objects in the schema assembled by "definitions", which is essentially a SQL query or script. The advantage of Views is they are dynamic. That is, when their referent data is updated, they too can be rerun and updated to reflect those changes. It is extremely convenient that the defining script is stored with the pseudo-table, and therefore can be rerun as desired, even by a user not versed in SQL. 
