@@ -53,25 +53,20 @@ In addition to these designations, which constrain the type of data that can be 
 #### Key Relations
 Key relations are an example of additional constraints that inform table design. In a table with a column designated as a Primary Key, the column is constrained to have unique and non-null entries. That is, records in that table cannot be repeated and cannot have a null primary key value. This is convenient for several reasons - first, it adds a constraint that keeps entries tidy and logical, and second, it allows for a many-to-one relation with other tables via a Foreign Key designation, which is convenient for structuring data queries. 
 
-To demonstrate, the Grady Lab database includes two patient records tables: a colonoscopies table, and a separate polyp records table. In the colonoscopies table, the encounter date (or date of colonoscopy procedure) is a designated Primary Key. This is because, for that table, only one row per colonoscopy is allowed. In the polyp records table however, there can be multiple records for multiple polyps described in a single colonoscopy. Since each polyp has an assciated colonoscopy, we designate the encounter date to be a Foreign Key, which introduces a relation to the encounter date in the colonoscopies table, or the Primary Key (see figure).
+To demonstrate, the Grady Lab database includes two patient records tables: a patients table that indexes patients and their date of birth; and a colonoscopies table that tracks available data from patient colonoscopies. The following figure depicts the schema design of these two tables with the fields, data types, constraints, and example records. For the patients table, the patientid column is not null, unique, and a primary key. For the colonoscopies table, the patientid column is also not null, but it is also a foreign key to the corresponding patientid column in the patients table. This adds an additional constraint to the colonoscopies patientid field, where no patientid can be included in that table if it does not also occur in the patients table. This means we can have records of patients in the patients table without corresponding colonoscopies (so long as there are no preexisting records with the same patientid in the patients table), but we cannot have colonoscopies recorded in the colonoscopies table without a patientid corresponding to a record in the patients table. 
 
-![The key relation between two hypothetical tables, one for colonoscopies and another for recorded polyps. The colonoscopy/ecounter date has the constraint of 'Primary Key' in the colonoscopies table (all dates unique, and must be non-null for every row), while in the polyps table it has the 'Foreign Key' (many entries possible for one colonoscopy).](keyrelation_clip.JPG)
-
-#### Inheritance
-Inheritance establishes a dynamic relation between tables, and when used effectively can add a degree of automation that is highly convenient for rich datasets. This is also one of several types of dependancy relations that can exist in a pgsql database.
-
-Inheritance between two discrete tables implies a parent-to-child relationship, where the child inherits all or some of the columns from the parent table. The parent table is populated with any records added in the child table. Modifications such as deletions of records in either the parent or child will then cascade into the other table linked by the dependancy. 
-
-Child tables can inherit columns from other children, which establishes a link back to the parent for the second child (eg. record additions to the second child will manifest in the parent). Additionally, multiple children can inherit from the same parent table. It is important to note, however, that the parent will include all records from all children, so if there are redundancies among the child tables, then they can all manifest in the parent, which can quickly make the parent table difficult to manage. 
-
-One potentially effective use of inheritance is where the parent table is a simple index of all types of all patient records. That is, a single patient may have multiple records, for example these might include colonoscopy records, individual polyp records, or cohort-collected data (eg. from separate questionnaires or followup encounters independent of any colonoscopy). See figure for a scheme of such a setup.  
-
-![Hypothetical inheritance structure using aforementioned colonoscopies and polyps tables as children to an aggregate index or data inventory table. Note missingness is allowed based on which table an entry comes from. In practice, project id could be included in the polyps table to avoid missingness for polyp entries in the inventory.](inheritance.JPG)
+![Key relation, one-to-many on patientid across the Patients and Colonoscopies tables.](keyrelation_clip.JPG)
 
 #### Database Schema
-The schema refers to the design of tables and other schema objects, including their relations to one another. The schema for the grady lab database will be backed up on the grady lab github page. Refer to the schema image for an example schema for the patients, colonoscopies, and polyps tables in the grady lab database.
+The schema refers to the design of tables and other schema objects, including their relations to one another. This is the fundamental structure and relations of the static data and database tables. The generation of database schema is called normalization.
 
-![Example image showing schema of part of the Grady Lab PostgreSQL database. Note the key relations between patient_id variables in the tables.](patient_coln_polyps_tablerelations.jpg) 
+![Database schema image created in pgModeler. Note the primary-to-foreign key relations between patientid fields in the Patients table and the Colonoscopies and Polyps tables, respectively.](patient_coln_polyps_tablerelations.jpg) 
+
+The schema for the grady lab database will be backed up on the grady lab [github page](https://github.com/GradyLab/GradyLab_PostgreSQL). 
+
+Database schema can be viewed as a series of table creation scripts written in SQL. To automatically get table creation scripts from pgAdmin, right click the table in the left-hand menu and select: "Scripts" > "CREATE Script" then save, or instead select "Backup" and choose from the dump options tab whether to export the schema, the data, or both.
+
+![Options for backing up a table schema and/or data in pgAdmin, accessible from right-clicking the Table and selecting Backup.](backup_options.JPG)
 
 # II. Practical Information
 ## Setting Up The Connection (For Hutch databases)
@@ -113,7 +108,7 @@ The following describes how to approach data management in the pgAdmin GUI.
 
 ### Setting up the Binary Path
 Many essential features in pgAdmin require access to modules initially installed with postgreSQL. To ensure pgAdmin can access these, Click File>Preferences>Paths>Binary Paths
-Enter the local path to the directory with the modules, eg. by default: `r paste0("C:\\\\Program Files\\\\PostgreSQL\\\\9.6\\\\bin")`
+Enter the local path to the directory with the modules, eg. by default: " C:>Program Files>PostgreSQL>9.6>bin" Where '>' is replaced by forward or backward slashes.
 
 ### Importing and Exporting Excel .csv Files
 
@@ -236,53 +231,47 @@ ORDER BY coln.patient_id,coln.encounter_date;
 
 Definition:
 ```{r eval=FALSE}
-SELECT patients.patient_id,
-    temppat.num_encounters,
-    temppat.encounter_dates,
-    temppat.encounter_ages,
-    temppat.polyps_recorded_by_encounter,
-    temppat.total_polyps_reported,
-    temppat.index_id
-   FROM gldata.patients,
-    ( SELECT colnage.patient_id,            
-     	colnage.patient_dob,    
-     	array_agg(colnage.age_yrs) AS encounter_ages,            
-     	array_agg(colnage.encounter_date) AS encounter_dates,            
-     	array_agg(colnage.n_polyps_recorded) AS polyps_recorded_by_encounter,            
-     	count(colnage.encounter_date) AS num_encounters,
-        array_agg(colnage.total_polyps_reported) AS total_polyps_reported,
-     	array_agg(colnage.index) AS index_id
-           FROM ( SELECT glcol.patient_id,
-                    patients_1.dob AS patient_dob,
-                    age(glcol.encounter_date::timestamp with time zone, patients_1.dob::timestamp with time zone) AS age,
-                    date_part('year'::text, age(glcol.encounter_date::timestamp with time zone, patients_1.dob::timestamp with time zone)) AS age_yrs,
-                    glcol.encounter_date,
-                    glcol.total_polyps_reported,
-                 glcol.index,
-                    n_polyps.n_polyps AS n_polyps_recorded
-                   FROM gldata.patients patients_1,
-                    gldata.colonoscopies glcol,
-                    ( SELECT colonoscopies.patient_id,
-                            colonoscopies.encounter_date,
-                            count((polyps.encounter_date || '-'::text) || polyps.patient_id::text) AS n_polyps
-                        FROM gldata.colonoscopies
-		     		LEFT JOIN gldata.polyps 
-		     		ON colonoscopies.patient_id::text = polyps.patient_id::text 
-		     		AND colonoscopies.encounter_date = polyps.encounter_date
-                        GROUP BY colonoscopies.patient_id, colonoscopies.encounter_date
-                        ORDER BY colonoscopies.patient_id, colonoscopies.encounter_date) n_polyps
-		 	WHERE patients_1.patient_id::text = glcol.patient_id::text 
-                 		AND patients_1.patient_id::text = n_polyps.patient_id::text 
-                		AND glcol.encounter_date = n_polyps.encounter_date
-                	AND glcol.patient_id IN ( SELECT colonoscopies.patient_id 		
-							FROM gldata.colonoscopies 
-							WHERE index='T'
-   		 					AND colonoscopies.total_polyps_reported >= 2) /* FILTER ON TOTAL NUMBER OF POLYPS AT INDEX */
-		) AS colnage
-     WHERE colnage.age_yrs >= 0::double precision /* FILTER ON MINIMUM AGE AT ENCOUNTER */ 		
-     AND colnage.n_polyps_recorded >= 0 /* FILTER ON MINIMUM NUMBER OF POLYPS AT ENCOUNTER */     
-     GROUP BY colnage.patient_id, colnage.patient_dob) temppat 
-     WHERE patients.patient_id::text = temppat.patient_id::text AND temppat.num_encounters >= 0; /* FILTER ON MINIMUM NUMBER OF ENCOUNTERS*/
+SELECT pat.patient_id,
+t.ne AS num_encounters,
+t.ed AS encounter_dates,
+t.ea AS encounter_ages,
+t.pr AS polyps_recorded_by_encounter,
+t.tp AS total_polyps_reported,
+t.i index_id
+FROM gldata.patients pat,
+( SELECT ct.patient_id,
+  array_agg(ct.age_yrs) AS ea,
+  array_agg(ct.encounter_date) AS ed,
+  array_agg(ct.npolyps) AS pr,
+  count(ct.encounter_date) AS ne,
+  array_agg(ct.total_polyps_reported) AS tp,
+  array_agg(ct.index) AS i
+  FROM ( SELECT gc.patient_id,
+         date_part('year', age(gc.encounter_date, p.dob)) AS age_yrs,
+         gc.encounter_date,
+         gc.total_polyps_reported,
+         gc.index,
+         p.dob,
+         npolt.n_polyps AS npolyps
+         FROM gldata.patients AS p,
+         gldata.colonoscopies AS gc,
+         ( SELECT glc.patient_id,
+           glc.encounter_date,
+           count((polyps.encounter_date || '-') || polyps.patient_id) AS n_polyps
+           FROM gldata.colonoscopies glc
+           LEFT JOIN gldata.polyps ON glc.patient_id = polyps.patient_id AND glc.encounter_date = polyps.encounter_date
+           GROUP BY glc.patient_id, glc.encounter_date
+           ORDER BY glc.patient_id, glc.encounter_date) npolt
+         WHERE p.patient_id = gc.patient_id
+         AND p.patient_id = npolt.patient_id 
+         AND gc.encounter_date = npolt.encounter_date 
+         AND (gc.patient_id IN ( SELECT glc.patient_id
+                                       FROM gldata.colonoscopies glc
+                                       WHERE glc.index = true AND glc.total_polyps_reported >= 0))) ct
+  WHERE ct.age_yrs >= 0 AND ct.npolyps >= 0
+  GROUP BY ct.patient_id, ct.dob) t
+WHERE pat.patient_id = t.patient_id
+AND t.ne >= 1;
 ```
 
 # TODO
